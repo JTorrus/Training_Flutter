@@ -1,39 +1,73 @@
-import 'dart:async';
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:training_test/model/movie.dart';
-import 'package:http/http.dart' as http;
-
+import 'package:training_test/utils/loading_state.dart';
+import 'package:training_test/utils/request_provider.dart';
+import 'package:training_test/widgets/movie_list_item.dart';
 
 class MovieList extends StatefulWidget {
-  MovieList({Key key}) : super(key: key);
+  MovieList(this.provider, this.category, {Key key}) : super(key: key);
 
+  final RequestProvider provider;
+  final String category;
+
+  @override
   _MovieListState createState() => new _MovieListState();
 }
 
 class _MovieListState extends State<MovieList> {
-  List movies;
+  List<Movie> _movies = List();
+  int _pageNumber = 1;
+  LoadingState _loadingState = LoadingState.LOADING;
+  bool _isLoading = false;
 
-  Future<Movie> getMovies() async {
-    final response = await http.get('https://api.themoviedb.org/3/movie/popular?api_key=15a26b90b4fa66d7f654f28746887f70&language=es-ES');
+  _loadNextPage() async {
+    _isLoading = true;
 
-    if (response.statusCode == 200) {
-      movies = json.decode(response.body);
-    } else {
-      throw Exception('Request failed');
+    try {
+      var nextMovies = await widget.provider
+          .provideMedia(widget.category, page: _pageNumber);
+
+      setState(() {
+        _loadingState = LoadingState.DONE;
+        _movies.addAll(nextMovies);
+        _isLoading = false;
+        _pageNumber++;
+      });
+    } catch (e) {
+      _isLoading = false;
+
+      if (_loadingState == LoadingState.LOADING) {
+        setState(() => _loadingState = LoadingState.ERROR);
+      }
     }
   }
 
   @override
   void initState() {
     super.initState();
-    getMovies();
+    _loadNextPage();
   }
 
   @override
   Widget build(BuildContext context) {
+    switch (_loadingState) {
+      case LoadingState.DONE:
+        return ListView.builder(
+            itemCount: _movies.length,
+            itemBuilder: (BuildContext context, int index) {
+              if (!_isLoading && index > (_movies.length * 0.7)) {
+                _loadNextPage();
+              }
 
+              return MovieListItem(_movies[index]);
+            });
+      case LoadingState.ERROR:
+        return Center(
+            child: Text("Error retrieving movies, check your connection"));
+      case LoadingState.LOADING:
+        return Center(child: CircularProgressIndicator());
+      default:
+        return Container();
+    }
   }
 }
-

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:training_test/utils/request_provider.dart';
+import 'package:training_test/widgets/movie_list.dart';
 
 void main() => runApp(new MyApp());
 
@@ -21,12 +23,14 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  RequestProvider _requestProvider = new RequestProvider();
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text("FluttieDB"),),
-      body: Center(
-        child: new Text("hola"),
+      body: MovieList(
+        _requestProvider, "popular"
       ),
     );
   }
