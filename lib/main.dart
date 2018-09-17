@@ -28,7 +28,12 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("FluttieDB"),),
+      appBar: AppBar(
+        title: Text("FluttieDB"),
+        actions: <Widget>[
+          IconButton(icon: Icon(Icons.filter_list), onPressed: () {},)
+        ],
+      ),
       body: MovieList(
         _requestProvider, "popular"
       ),
