@@ -14,29 +14,3 @@ class MyApp extends StatelessWidget {
     );
   }
 }
-
-class HomePage extends StatefulWidget {
-  HomePage({Key key}) : super(key: key);
-
-  @override
-  _HomePageState createState() => new _HomePageState();
-}
-
-class _HomePageState extends State<HomePage> {
-  RequestProvider _requestProvider = new RequestProvider();
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text("FluttieDB"),
-        actions: <Widget>[
-          IconButton(icon: Icon(Icons.filter_list), onPressed: () {},)
-        ],
-      ),
-      body: MovieList(
-        _requestProvider, "popular"
-      ),
-    );
-  }
-}
