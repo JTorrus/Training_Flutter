@@ -4,17 +4,23 @@ import 'package:training_test/utils/loading_state.dart';
 import 'package:training_test/utils/request_provider.dart';
 import 'package:training_test/widgets/movie_list_item.dart';
 
-String _currentFilter = "popular";
+String _currentFilter = "";
 
 class HomePage extends StatefulWidget {
-  HomePage({Key key}) : super(key: key);
+  HomePage({Key key, this.provider, this.initialFilter}) : super(key: key);
+
+  final RequestProvider provider;
+  final String initialFilter;
 
   @override
   _HomePageState createState() => new _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
-  RequestProvider _requestProvider = new RequestProvider();
+  List<Movie> _movies = List();
+  int _pageNumber = 1;
+  LoadingState _loadingState = LoadingState.LOADING;
+  bool _isLoading = false;
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +34,35 @@ class _HomePageState extends State<HomePage> {
           )
         ],
       ),
-      body: MovieList(_requestProvider, _currentFilter),
+      body: buildBody(),
+    );
+  }
+
+  Widget buildFilterBottomSheetUpper() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
+      alignment: Alignment.centerLeft,
+      height: 46.0,
+      decoration: BoxDecoration(color: Colors.blue),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        mainAxisSize: MainAxisSize.max,
+        children: <Widget>[
+          Text(
+            "Filter by",
+            style: TextStyle(color: Colors.white, fontSize: 20.0),
+          ),
+          OutlineButton(
+            onPressed: () => performUpdate(),
+            padding: const EdgeInsets.all(0.0),
+            shape: const StadiumBorder(),
+            child: Text(
+              "Done",
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -41,67 +75,22 @@ class _HomePageState extends State<HomePage> {
             decoration: BoxDecoration(color: Colors.white),
             child: Column(
               children: <Widget>[
-                buildFilterTitle(context),
+                buildFilterBottomSheetUpper(),
                 Expanded(
-                  child: _FilterChipRow(),
+                  child: FilterChipRow(),
                 ),
               ],
             ),
           );
         });
   }
-}
-
-Widget buildFilterTitle(BuildContext context) {
-  return Container(
-    padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
-    alignment: Alignment.centerLeft,
-    height: 46.0,
-    decoration: BoxDecoration(color: Colors.blue),
-    child: Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      mainAxisSize: MainAxisSize.max,
-      children: <Widget>[
-        Text(
-          "Filter by",
-          style: TextStyle(color: Colors.white, fontSize: 20.0),
-        ),
-        OutlineButton(
-          onPressed: () {},
-          padding: const EdgeInsets.all(0.0),
-          shape: const StadiumBorder(),
-          child: Text(
-            "Done",
-            style: TextStyle(color: Colors.white),
-          ),
-        ),
-      ],
-    ),
-  );
-}
-
-class MovieList extends StatefulWidget {
-  MovieList(this.provider, this.currentFilter, {Key key}) : super(key: key);
-
-  final RequestProvider provider;
-  final String currentFilter;
-
-  @override
-  _MovieListState createState() => new _MovieListState();
-}
-
-class _MovieListState extends State<MovieList> {
-  List<Movie> _movies = List();
-  int _pageNumber = 1;
-  LoadingState _loadingState = LoadingState.LOADING;
-  bool _isLoading = false;
 
   _loadNextPage() async {
     _isLoading = true;
 
     try {
-      var nextMovies = await widget.provider
-          .provideMedia(widget.currentFilter, page: _pageNumber);
+      var nextMovies =
+          await widget.provider.provideMedia(_currentFilter, page: _pageNumber);
 
       setState(() {
         _loadingState = LoadingState.DONE;
@@ -112,20 +101,29 @@ class _MovieListState extends State<MovieList> {
     } catch (e) {
       _isLoading = false;
 
-      if (_loadingState == LoadingState.LOADING) {
-        setState(() => _loadingState = LoadingState.ERROR);
-      }
+      setState(() => _loadingState = LoadingState.ERROR);
     }
+  }
+
+  void performUpdate() {
+    setState(() {
+      _movies.clear();
+      _pageNumber = 1;
+      _loadingState = LoadingState.LOADING;
+      Navigator.pop(context);
+    });
+
+    _loadNextPage();
   }
 
   @override
   void initState() {
     super.initState();
+    _currentFilter = widget.initialFilter;
     _loadNextPage();
   }
 
-  @override
-  Widget build(BuildContext context) {
+  Widget buildBody() {
     switch (_loadingState) {
       case LoadingState.DONE:
         return ListView.builder(
@@ -148,20 +146,22 @@ class _MovieListState extends State<MovieList> {
   }
 }
 
-class _FilterChipRow extends StatefulWidget {
+class FilterChipRow extends StatefulWidget {
   @override
   _FilterChipRowState createState() {
     return new _FilterChipRowState();
   }
 }
 
-class _FilterChipRowState extends State<_FilterChipRow> {
-  bool _filterPopularity = true;
-  bool _filterRate = false;
-  bool _filterLatest = false;
+class _FilterChipRowState extends State<FilterChipRow> {
+  bool _filterPopularity;
+  bool _filterRate;
+  bool _filterLatest;
 
   @override
   Widget build(BuildContext context) {
+    checkFilters();
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -177,6 +177,7 @@ class _FilterChipRowState extends State<_FilterChipRow> {
             });
           },
           selected: _filterPopularity,
+          selectedColor: Colors.blue[300],
         ),
         FilterChip(
           label: Text("Ratings"),
@@ -189,20 +190,38 @@ class _FilterChipRowState extends State<_FilterChipRow> {
             });
           },
           selected: _filterRate,
+          selectedColor: Colors.blue[300],
         ),
         FilterChip(
-          label: Text("Latest"),
+          label: Text("Upcoming"),
           onSelected: (value) {
             setState(() {
               _filterLatest = value;
               _filterRate = !value;
               _filterPopularity = !value;
-              _currentFilter = "latest";
+              _currentFilter = "upcoming";
             });
           },
           selected: _filterLatest,
+          selectedColor: Colors.blue[300],
         ),
       ],
     );
+  }
+
+  void checkFilters() {
+    if (_currentFilter == "popular") {
+      _filterPopularity = true;
+      _filterRate = false;
+      _filterLatest = false;
+    } else if (_currentFilter == "top_rated") {
+      _filterPopularity = false;
+      _filterRate = true;
+      _filterLatest = false;
+    } else if (_currentFilter == "upcoming") {
+      _filterPopularity = false;
+      _filterRate = false;
+      _filterLatest = true;
+    }
   }
 }
