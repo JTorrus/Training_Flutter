@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:training_test/details.dart';
 import 'package:training_test/model/movie.dart';
 import 'package:training_test/utils/media_details.dart';
 
@@ -81,7 +82,11 @@ class MovieListItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       child: InkWell(
-        onTap: () {},
+        onTap: () {
+          Navigator.push(context, MaterialPageRoute(builder: (context) {
+            return Details(movie);
+          }));
+        },
         child: Container(
           child: _getTitleSection(context),
         ),

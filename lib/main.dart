@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:training_test/utils/request_provider.dart';
-import 'package:training_test/widgets/movie_list.dart';
+import 'package:training_test/home.dart';
 
 void main() => runApp(new MyApp());
 
 class MyApp extends StatelessWidget {
-  String _initialFilter = "popular";
-  RequestProvider _requestProvider = new RequestProvider();
+  final String _initialFilter = "popular";
+  final RequestProvider _requestProvider = new RequestProvider();
 
   @override
   Widget build(BuildContext context) {
